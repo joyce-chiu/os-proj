@@ -14,6 +14,9 @@ public:
     bool requestingIO;
     bool swapping;
     bool running;
+    bool killed;
+    bool blocked;
+
 	
     Job::Job() {
         job_num = -1;
@@ -27,6 +30,8 @@ public:
         requestingIO = false;
         swapping = false;
         running = false;
+        killed = false;
+        blocked = false;
     }
     Job::Job( int num, int priority, int size, int max_time , int current_time){
         job_num = num;
@@ -40,6 +45,8 @@ public:
         requestingIO = false;
         swapping = false;
         running = false;
+        killed = false;
+        blocked = false;
     }
 };
 
