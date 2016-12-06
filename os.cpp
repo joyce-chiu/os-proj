@@ -11,8 +11,8 @@ static bool processingIO;
 static MemoryManager memory;  // creates 100k of memory
 static queue <Job> IOQ; // jobs waiting for I/O
 static list <Job> JobTable; //should be intialized with space for 50 jobs
-static list<Job>::iterator job = JobTable.begin();; // A gloabl joberator for the job table. iterator points to the job object in the list.
-
+static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
+static int curr_job; // the job number of the current running job.
 
 void startup (){
 
@@ -26,7 +26,7 @@ void drmint ( int &a, int p [] ){
 	cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
 	/*  Drum has finished swapping a job in/out of memory.  */
 
-    /*  move swapped job out of the job table
+    /*  update swapped job in the job table
        Loop through job table looking for the job that was set to swap and set flags
       */
     for( job = JobTable.begin(); job != JobTable.end(); ++job ){
@@ -51,6 +51,7 @@ void tro ( int &a, int p [] ){
         // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
         cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
 		JobTable.erase( job );
+        // call function to delete job from memory
     }
     else if (  job->curr_time <=   job->maxTime ){
         cout << "TIMER RUNOUT" << endl << "TIME SLICE EXCEEDED, JOB SENT BACK TO MEMORY" << endl;
@@ -70,11 +71,29 @@ void swapper (){
 					CurrentlySwapping = true;
 					sos.siodrum( job->job_num,  job->size,  job->address, 0);
 			}
-			else job++; // if job too big for current memory space or already in memory, move to next job in table.
+            else ++job; // if job too big for current memory space or already in memory, move to next job in table.
 				
 		}
 	
 	}
 	
+}
+
+void runJob(){
+    /*  Gets the next job to run from CPU Scheduler and runs that job. */
+    curr_job = CPU_scheduler();
+
+    while ( job -> job_num != curr_job ){  // look through the job table for the job number that CPU scheduler returned.
+        job++;
+    }
+
+    a = 2; // CPU in user mode
+    p[2] = job ->address;
+    p[3] = job ->size;
+    p[4] = job -> /* time slice  */;
+
+    job ->running = true;
+
+
 }
 
