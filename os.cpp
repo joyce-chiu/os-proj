@@ -21,8 +21,7 @@ void crint (int &a, int p[]) {		//A new job has arrived, information about the j
 
 	bookkeeper(p[5]);
 
-	/* 
-		p[1] = job number
+	/* 	p[1] = job number
 	   	p[2] = priority
 	  	p[3] = job size
 	   	p[4] = max time
@@ -46,8 +45,7 @@ void svc (int &a, int p[]) {
 
 	bookkeeper(p[5]);
 
-	/*
-		If a = 5: the job is requesting termination.
+	/*	If a = 5: the job is requesting termination.
 		If a = 6: the job is requesting another disk I/O operation.
 		If a = 7: the job requesting to be blocked until all pending I/O requests are completed.
 	*/
