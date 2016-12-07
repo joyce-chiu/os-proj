@@ -6,8 +6,8 @@ public:
     int job_num;
     int priority;
     int size;
-    int maxTime;
-    int curr_time;
+    int maxTime;        //Max CPU time
+    int enterTime;      //Time when job begins using the CPU
     int address;
     bool inMem;
     bool doingIO;
@@ -23,7 +23,7 @@ public:
         priority = -1;
         size = 0 ;
         maxTime = -1;
-        curr_time = -1;
+        enterTime = -1;
         address = -1;
         inMem = false;
         doingIO = false;
@@ -37,8 +37,8 @@ public:
         job_num = num;
         priority = priority;
         size = size ;
-        maxTime = time;
-        curr_time = current_time;
+        maxTime = max_time;
+        enterTime = current_time;
         address = -1 ;
         inMem = false;
         doingIO = false;
