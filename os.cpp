@@ -98,7 +98,7 @@ void svc (int &a, int p[]) {
 }
 
 
-int CPU_scheduler (int &a, int p[]) {
+int CPU_scheduler () {
 
 	//Select the next job to use the CPU and return the job number
 	//The job is selected only if it is not blocked
