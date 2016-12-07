@@ -111,13 +111,12 @@ int CPU_scheduler (int &a, int p[]) {
 	int scheduledJob;	// Integer variable to hold the job number to use the CPU
 
 	while(!JobTable.empty()) {
-		if(job->blocked != true) {
+		if(job->blocked == false) {
 			scheduledJob = job->job_num;
-			job++;
 			return scheduledJob;
 		}
+		job++;
 	}
-
 	return -1;
 }
 
