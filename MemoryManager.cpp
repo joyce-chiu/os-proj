@@ -7,7 +7,7 @@
 
 MemoryManager::MemoryManager()
 {
-	memory = std::list<>();
+	memory = list<>();
 	for (int i = 0; i < MAX_SIZE; i++)
 	{
 		memory.push_back(0);
@@ -16,7 +16,7 @@ MemoryManager::MemoryManager()
 
 bool MemoryManager::addToMemory(Job *j)
 {
-	std::wcout << std::wstring(L"addToMemory WORKING") << std::endl;
+	cout << string("addToMemory WORKING") << endl;
 
 	int sizeNeeded = j->getJobSize();
 	bool startAddSet = false;
