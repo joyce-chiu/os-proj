@@ -26,7 +26,7 @@ void Dskint(int &a, int p[])
 	
 		bookkeeper(p[5]);
 		//notify that I/O was completed
-		//function should find job that was send to do I/O
+		//function should find job that was sent to do I/O
 		//mark that I/O for that job was done and 
 		//select new job from IO queue to do I/O and send it to do I/O
 		processingIO = false;
