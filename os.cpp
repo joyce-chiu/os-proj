@@ -20,6 +20,30 @@ void startup (){ // Declares all variables
 }
 
 
+void Dskint(int &a, int p[])
+{
+		cout << string("DSKINT WORKING") << endl;
+	
+		bookkeeper(p[5]);
+		//notify that I/O was completed
+		//function should find job that was send to do I/O
+		//mark that I/O for that job was done and 
+		//select new job from IO queue to do I/O and send it to do I/O
+		processingIO = false;
+		int posOfIOJob = findJobDoingIO();
+		cout << posOfIOJob << endl;
+		jobTable->get(posOfIOJob).setDoingIO(false);
+		jobTable->get(posOfIOJob).setBlocked(false);
+		jobTable->get(posOfIOJob).setRequestIO(false);
+		if (jobTable->get(posOfIOJob).getKilled())
+		{
+			terminateJob(posOfIOJob);
+		}
+		runIO();
+		runJob(a,p);
+}
+
+
 void drmint ( int &a, int p [] ){
 
 }
