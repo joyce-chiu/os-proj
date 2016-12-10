@@ -7,7 +7,8 @@ public:
     int priority;
     int size;
     int maxTime;
-    int curr_time;
+    int enterTime;
+    int currTime;
     int address;
     bool inMem;
     bool doingIO;
@@ -20,7 +21,7 @@ public:
         priority = -1;
         size = 0 ;
         maxTime = -1;
-        curr_time = -1;
+        currTime = -1;
         address = -1;
         inMem = false;
         doingIO = false;
@@ -28,12 +29,12 @@ public:
         swapping = false;
         running = false;
     }
-    Job::Job( int num, int priority, int size, int max_time , int current_time){
+    Job::Job( int num, int priority, int size, int max_time , int curr_time){
         job_num = num;
         priority = priority;
-        size = size ;
-        maxTime = time;
-        curr_time = current_time;
+        size = size;
+        maxTime = max_time;
+        enterTime = curr_time;
         address = -1 ;
         inMem = false;
         doingIO = false;
