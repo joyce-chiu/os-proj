@@ -12,7 +12,7 @@ static MemoryManager memory;  // creates 100k of memory
 static queue <Job> IOQ; // jobs waiting for I/O
 static list <Job> JobTable; //should be intialized with space for 50 jobs
 static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
-static int timeSlice = 5;
+static const int timeSlice = 5;
 
 void startup (){
 
@@ -70,15 +70,13 @@ void swapper (){
 		job = JobTable.begin();
 		while ( job != JobTable.end()){
 			if ( !( job->inMem ) && /*  job fits in memory */) {
-					CurrentlySwapping = true;
-					sos.siodrum( job->job_num,  job->size,  job->address, 0);
+				CurrentlySwapping = true;
+				sos.siodrum( job->job_num,  job->size,  job->address, 0);
+				job -> inMem = true;
 			}
-            else ++job; // if job too big for current memory space or already in memory, move to next job in table.
-				
 		}
-	
 	}
-	
+        else ++job; // if job too big for current memory space or already in memory, move to next job in table.		
 }
 
 void runJob(){
@@ -99,10 +97,8 @@ void runJob(){
             /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
              *  else job is given only enough time to finish
             */
-
             p[4] = (job -> size > timeSlice) ? timeSlice :  job -> size;
-
-
+	    
 	    job ->running = true;
 
      } else a = 1; // CPU set to idle
