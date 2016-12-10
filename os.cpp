@@ -23,7 +23,7 @@ void startup (){
 
 
 void drmint ( int &a, int p [] ){
-	cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
+     cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
         /*  Drum has finished swapping a job into of memory.  */
 
     /*  update swapped job in the job table
@@ -33,10 +33,9 @@ void drmint ( int &a, int p [] ){
            if (  job->swapping ) {
                 job->swapping = false;
                 job->inMem = true;
-               break; // Once job info is updated, stop iterating through list.
+                break; // Once job info is updated, stop iterating through list.
            }
     }
-
 }
 
 // I THINK THE LOGIC FOR THE TRO FUNCTION WORKS. I DONT KNOW IF THE CODE WORKS!
@@ -44,21 +43,21 @@ void drmint ( int &a, int p [] ){
 void tro ( int &a, int p [] ){
 	
 /*  if  a job has reached job max allowed time, kill job
- *  else if job has used up time slice but not yet used up all allowed time,
- *  send back to ready queue (memory) */
+ *  else, job has used up time slice but not yet used up all allowed time,
+ *  send back to ready queue (memory)  with updated current time ( total time job has spent in memory )*/
 
     while ( p[1] != job -> number ){ job++; } // makes jobtable iterator point to the job that triggered tro.
 
-    if ( job->enterTime >=  job->maxTime){
+    if ( job-> currTime >=  job->maxTime){
         // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
         cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
 		JobTable.erase( job );
         // call function to delete job from memory
     }
-    else if (  job->enterTime <=   job->maxTime ){
+    else if (  job->currTime <   job->maxTime ){
         cout << "TIMER RUNOUT" << endl << "TIME SLICE EXCEEDED, JOB SENT BACK TO MEMORY" << endl;
 
-         job->curr_time =  job->enterTime + timeSlice ;  // total curr_time + Time Slice
+         job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
     }
 }
 
@@ -69,7 +68,7 @@ void swapper (){
 	if ( !CurrentlySwapping ){	
 		job = JobTable.begin();
 		while ( job != JobTable.end()){
-			if ( !( job->inMem ) && /*  job fits in memory */) {
+			if ( !( job->inMem ) && /* job fits in memory */) {
 				CurrentlySwapping = true;
 				sos.siodrum( job->job_num,  job->size,  job->address, 0);
 				job -> inMem = true;
@@ -83,13 +82,14 @@ void runJob(){
     /*  Gets the next job to run from CPU Scheduler and runs that job. *
      *  CPU Scheduler should retunr a job number of a job that is in memory, and not blokcked*/
     int curr_job = CPU_scheduler();
-
+	
     if ( curr_job != -1 ){ 	// if CPU Scheduler returns -1, there are no jobs in the job  table
-
 	    while ( job -> job_num != curr_job ){  // look through the job table for the job number that CPU scheduler returned.
 		job++;
 	    }
-
+	    
+	    job -> enterTime = job -> currTime; // records the total CPU time of the job so far before it goes back to using the CPU
+	    
 	    a = 2; // CPU in user mode
 	    p[2] = job ->address;
 	    p[3] = job ->size;
@@ -98,11 +98,7 @@ void runJob(){
              *  else job is given only enough time to finish
             */
             p[4] = (job -> size > timeSlice) ? timeSlice :  job -> size;
-	    
 	    job ->running = true;
-
      } else a = 1; // CPU set to idle
 
 }
-
-
