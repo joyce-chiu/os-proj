@@ -29,6 +29,7 @@ void drmint ( int &a, int p [] ){
     /*  update swapped job in the job table
        Loop through job table looking for the job that was set to swap and reset flags
       */
+    CurrentlySwapping = false;
     for( job = JobTable.begin(); job != JobTable.end(); ++job ){
            if (  job->swapping ) {
                 job->swapping = false;
@@ -68,21 +69,23 @@ void swapper (){
    *Call a routine that finds space in memory, then OS must call siodrum() to swap the job in.
    */
 	int enoughSpace = 0;	
-	if ( !JobTable.empty()){	
+	if ( !CurrentlySwapping ){	
 		//Search through the job table for a job noT in Memory 
 		job = JobTable.begin();
 		while ( Job != JobTable.end() ){ 
 			if  ( !(job -> inMem) ){
-				/* If selected job fits in Memory, swap in to memory  */
+				/* If selected job fits in Memory,swap in to memory  */
 				enoughSpace = findFreeSpace ( job -> size );
-				if ( enoughSpace != -1 ){
-					CurrentlySwapping = true;
-					siodrum( job -> job_num, job -> size, job -> address, 0 );
-					job -> inMem = true;
-				}else job++; // if does not fit in memory increment iterator to the next job
+			if ( enoughSpace != -1 ){
+				CurrentlySwapping = true;
+				sos.siodrum( job -> job_num, job -> size, job -> address, 0 );
+				memory.addToMemorry( *job );
+				job -> inMem = true;
+				cout << " Swap succesfull "<< end;
+			}else job++; // if does not fit in memory increment iterator to the next job
 			}else job++; // if job already in memory, increment iterator to the next job
 		}	
-	}else cout << " JobTable empty. No more jobs to swap in"<< endl;
+	}
 }
 	
 
