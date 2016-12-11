@@ -51,7 +51,9 @@ void tro ( int &a, int p [] ){
     if ( job-> currTime >=  job->maxTime){
         // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
         cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
-		JobTable.erase( job );
+		JobTable.erase(*job);
+	    	removeFromMemory(*job);
+	    	
         // call function to delete job from memory
     }
     else if (  job->currTime <   job->maxTime ){
@@ -62,21 +64,27 @@ void tro ( int &a, int p [] ){
 }
 
 void swapper (){
-/* *Determines which jobs that are not in memory to swap into memory.
+  /* *Determines which jobs that are not in memory to swap into memory.
    *Call a routine that finds space in memory, then OS must call siodrum() to swap the job in.
-  */
-	if ( !CurrentlySwapping ){	
+   */
+	int enoughSpace = 0;	
+	if ( !JobTable.empty()){	
+		//Search through the job table for a job noT in Memory 
 		job = JobTable.begin();
-		while ( job != JobTable.end()){
-			if ( !( job->inMem ) && /* job fits in memory */) {
-				CurrentlySwapping = true;
-				sos.siodrum( job->job_num,  job->size,  job->address, 0);
-				job -> inMem = true;
-			}
-		}
-	}
-        else ++job; // if job too big for current memory space or already in memory, move to next job in table.		
+		while ( Job != JobTable.end() ){ 
+			if  ( !(job -> inMem) ){
+				/* If selected job fits in Memory, swap in to memory  */
+				enoughSpace = findFreeSpace ( job -> size );
+				if ( enoughSpace != -1 ){
+					CurrentlySwapping = true;
+					siodrum( job -> job_num, job -> size, job -> address, 0 );
+					job -> inMem = true;
+				}else job++; // if does not fit in memory increment iterator to the next job
+			}else job++; // if job already in memory, increment iterator to the next job
+		}	
+	}else cout << " JobTable empty. No more jobs to swap in"<< endl;
 }
+	
 
 void runJob(){
     /*  Gets the next job to run from CPU Scheduler and runs that job. *
