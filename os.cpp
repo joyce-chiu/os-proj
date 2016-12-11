@@ -32,9 +32,9 @@ void Dskint(int &a, int p[])
 		processingIO = false;
 		int posOfIOJob = findJobDoingIO();
 		cout << posOfIOJob << endl;
-		jobTable->get(posOfIOJob).setDoingIO(false);
-		jobTable->get(posOfIOJob).setBlocked(false);
-		jobTable->get(posOfIOJob).setRequestIO(false);
+		JobTable->get(posOfIOJob).setDoingIO(false);
+		JobTable->get(posOfIOJob).setBlocked(false);
+		JobTable->get(posOfIOJob).setRequestIO(false);
 		if (jobTable->get(posOfIOJob).getKilled())
 		{
 			terminateJob(posOfIOJob);
@@ -47,16 +47,16 @@ void runIO()
 {
 	if (!doingIO)
 	{
-		if (!IOQueue->isEmpty())
+		if (!IOQ->isEmpty())
 		{
 			for (pcb *job : IOQueue)
 			{
-				if (job->INMEMORY)
+				if (job->inMem)
 				{
-					sos::siodisk(job->jobnum);
-					IOQueue->remove(job);
-					jobtable->get(findJobTablePos(job->jobnum))->DOINGIO = true;
-					jobtable->get(findJobTablePos(job->jobnum))->REQUESTIO = true;
+					sos::siodisk(job->job_num);
+					IOQ->remove(job);
+					JobTable->get(findJobTablePos(job->job_num))->doingIO = true;
+					JobTable->get(findJobTablePos(job->job_num))->requestingIO = true;
 					doingIO = true;
 					break;
 				}
@@ -68,9 +68,9 @@ void runIO()
 int findRunningJob()
 {
 	int jobtablePos = -1;
-	for (int i = 0; i < jobtable->size(); i++)
+	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (jobtable->get(i).RUNNING)
+		if (JobTable->get(i).running)
 		{
 			jobtablePos = i;
 		}
@@ -81,9 +81,9 @@ int findRunningJob()
 int findIOJob()
 {
 	int jobtablePos = -1;
-	for (int i = 0; i < jobtable->size(); i++)
+	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (jobtable->get(i).DOINGIO)
+		if (JobTable->get(i).doingIO)
 		{
 			jobtablePos = i;
 		}
@@ -91,11 +91,11 @@ int findIOJob()
 	return jobtablePos;
 }
 
-int findJobTablePos(int jobNum)
+int findJobTablePos(int job_num)
 {
-	for (int i = 0; i < jobtable->size(); i++)
+	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (jobtable->get(i)->jobnum == jobNum)
+		if (JobTable->get(i)->job_num == job_num)
 		{
 			return i;
 		}
