@@ -3,10 +3,14 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <map>
 #include <iostream>
 
 MemoryManager::MemoryManager()
 {
+	memory = vector<int>(Collections::Copies(MAX_SIZE, 0));
+	fsTable = map<int, int>();
+	
 	memory = list<>();
 	for (int i = 0; i < MAX_SIZE; i++)
 	{
