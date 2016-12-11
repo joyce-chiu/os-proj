@@ -43,6 +43,67 @@ void Dskint(int &a, int p[])
 		runJob(a,p);
 }
 
+void runIO()
+{
+	if (!doingIO)
+	{
+		if (!IOQueue->isEmpty())
+		{
+			for (pcb *job : IOQueue)
+			{
+				if (job->INMEMORY)
+				{
+					sos::siodisk(job->jobnum);
+					IOQueue->remove(job);
+					jobtable->get(findJobTablePos(job->jobnum))->DOINGIO = true;
+					jobtable->get(findJobTablePos(job->jobnum))->REQUESTIO = true;
+					doingIO = true;
+					break;
+				}
+			}
+		}
+	}
+}
+
+int findRunningJob()
+{
+	int jobtablePos = -1;
+	for (int i = 0; i < jobtable->size(); i++)
+	{
+		if (jobtable->get(i).RUNNING)
+		{
+			jobtablePos = i;
+		}
+	}
+	return jobtablePos;
+}
+
+int findIOJob()
+{
+	int jobtablePos = -1;
+	for (int i = 0; i < jobtable->size(); i++)
+	{
+		if (jobtable->get(i).DOINGIO)
+		{
+			jobtablePos = i;
+		}
+	}
+	return jobtablePos;
+}
+
+int findJobTablePos(int jobNum)
+{
+	for (int i = 0; i < jobtable->size(); i++)
+	{
+		if (jobtable->get(i)->jobnum == jobNum)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
+
 
 void drmint ( int &a, int p [] ){
 
