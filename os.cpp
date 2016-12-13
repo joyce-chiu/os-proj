@@ -5,22 +5,19 @@ using namespace std;
 #include <list>
 #include<queue>
 
-
 static bool CurrentlySwapping;
 static bool processingIO;
 static MemoryManager memory;  // creates 100k of memory
 static queue <Job> IOQ; // jobs waiting for I/O
 static list <Job> JobTable; //should be intialized with space for 50 jobs
 static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
-static const int timeSlice = 5;
+static const int timeSlice = 5000; //in miliseconds
 
 void startup (){
-
     sos.ontrace();
     CurrentlySwapping = false;
     processingIO = false;
 }
-
 
 void drmint ( int &a, int p [] ){
      cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
@@ -40,27 +37,24 @@ void drmint ( int &a, int p [] ){
 }
 
 // I THINK THE LOGIC FOR THE TRO FUNCTION WORKS. I DONT KNOW IF THE CODE WORKS!
-
 void tro ( int &a, int p [] ){
 	
 /*  if  a job has reached job max allowed time, kill job
  *  else, job has used up time slice but not yet used up all allowed time,
  *  send back to ready queue (memory)  with updated current time ( total time job has spent in memory )*/
 
+    int timeElapsed = currTime - enterTime;    
     while ( p[1] != job -> number ){ job++; } // makes jobtable iterator point to the job that triggered tro.
 
-    if ( job-> currTime >=  job->maxTime){
+    if ( timeElapse = job->maxTime){
         // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
         cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
 		JobTable.erase(*job);
-	    	removeFromMemory(*job);
-	    	
-        // call function to delete job from memory
+	    	removeFromMemory(*job);    	
     }
-    else if (  job->currTime <   job->maxTime ){
-        cout << "TIMER RUNOUT" << endl << "TIME SLICE EXCEEDED, JOB SENT BACK TO MEMORY" << endl;
-
-         job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
+    else if (  timeElapsed < job->maxTime ){
+        cout << "TIMER RUNOUT" << endl << "TIME SLICE FINISHED, JOB SENT BACK TO MEMORY" << endl;
+        job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
     }
 }
 
@@ -108,8 +102,7 @@ void runJob(){
             /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
              *  else job is given only enough time to finish
             */
-            p[4] = (job -> size > timeSlice) ? timeSlice :  job -> size;
+            p[4] = (job -> maxTime > timeSlice) ? timeSlice :  job -> maxTime;
 	    job ->running = true;
      } else a = 1; // CPU set to idle
-
 }
