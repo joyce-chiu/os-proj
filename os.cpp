@@ -23,24 +23,19 @@ void startup (){ // Declares all variables
 void Dskint(int &a, int p[])
 {
 		cout << string("DSKINT WORKING") << endl;
-	
-		bookkeeper(p[5]);
-		//notify that I/O was completed
-		//function should find job that was sent to do I/O
-		//mark that I/O for that job was done and 
-		//select new job from IO queue to do I/O and send it to do I/O
-		processingIO = false;
-		int posOfIOJob = findJobDoingIO();
-		cout << posOfIOJob << endl;
-		JobTable->get(posOfIOJob).setDoingIO(false);
-		JobTable->get(posOfIOJob).setBlocked(false);
-		JobTable->get(posOfIOJob).setRequestIO(false);
-		if (jobTable->get(posOfIOJob).getKilled())
+		bookKeep(p[5]);
+		doingIO = false;
+		int posOfJob = findIOJob();
+		cout << "Position of IO Job: " << posOfJob << endl;
+		job->doingIO = false;
+		job->running = true;
+		job->requestingIO = false;
+		if (Job->running = false)
 		{
-			terminateJob(posOfIOJob);
+			terminateJob(findJobTablePos(IOJob->jobnum));
 		}
 		runIO();
-		runJob(a,p);
+		runJob(a, p);
 }
 
 void runIO()
@@ -49,14 +44,14 @@ void runIO()
 	{
 		if (!IOQ->isEmpty())
 		{
-			for (pcb *job : IOQueue)
+			for (job : IOQ)
 			{
 				if (job->inMem)
 				{
 					sos::siodisk(job->job_num);
 					IOQ->remove(job);
-					JobTable->get(findJobTablePos(job->job_num))->doingIO = true;
-					JobTable->get(findJobTablePos(job->job_num))->requestingIO = true;
+					JobTable(findJobTablePos(job->job_num))->doingIO = true;
+					JobTable(findJobTablePos(job->job_num))->requestingIO = true;
 					doingIO = true;
 					break;
 				}
@@ -70,7 +65,7 @@ int findRunningJob()
 	int jobtablePos = -1;
 	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (JobTable->get(i).running)
+		if (JobTable(i).running)
 		{
 			jobtablePos = i;
 		}
@@ -83,7 +78,7 @@ int findIOJob()
 	int jobtablePos = -1;
 	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (JobTable->get(i).doingIO)
+		if (JobTable(i).doingIO)
 		{
 			jobtablePos = i;
 		}
@@ -95,7 +90,7 @@ int findJobTablePos(int job_num)
 {
 	for (int i = 0; i < JobTable->size(); i++)
 	{
-		if (JobTable->get(i)->job_num == job_num)
+		if (JobTable(i)->job_num == job_num)
 		{
 			return i;
 		}
