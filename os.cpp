@@ -23,25 +23,81 @@ void startup (){ // Declares all variables
 void Dskint(int &a, int p[])
 {
 		cout << string("DSKINT WORKING") << endl;
-	
-		bookkeeper(p[5]);
-		//notify that I/O was completed
-		//function should find job that was sent to do I/O
-		//mark that I/O for that job was done and 
-		//select new job from IO queue to do I/O and send it to do I/O
-		processingIO = false;
-		int posOfIOJob = findJobDoingIO();
-		cout << posOfIOJob << endl;
-		jobTable->get(posOfIOJob).setDoingIO(false);
-		jobTable->get(posOfIOJob).setBlocked(false);
-		jobTable->get(posOfIOJob).setRequestIO(false);
-		if (jobTable->get(posOfIOJob).getKilled())
+		bookKeep(p[5]);
+		doingIO = false;
+		int posOfJob = findIOJob();
+		cout << "Position of IO Job: " << posOfJob << endl;
+		job->doingIO = false;
+		job->running = true;
+		job->requestingIO = false;
+		if (Job->running = false)
 		{
-			terminateJob(posOfIOJob);
+			terminateJob(findJobTablePos(IOJob->jobnum));
 		}
 		runIO();
-		runJob(a,p);
+		runJob(a, p);
 }
+
+void runIO()
+{
+	if (!doingIO)
+	{
+		if (!IOQ->isEmpty())
+		{
+			for (job : IOQ)
+			{
+				if (job->inMem)
+				{
+					sos::siodisk(job->job_num);
+					IOQ->remove(job);
+					JobTable(findJobTablePos(job->job_num))->doingIO = true;
+					JobTable(findJobTablePos(job->job_num))->requestingIO = true;
+					doingIO = true;
+					break;
+				}
+			}
+		}
+	}
+}
+
+int findRunningJob()
+{
+	int jobtablePos = -1;
+	for (int i = 0; i < JobTable->size(); i++)
+	{
+		if (JobTable(i).running)
+		{
+			jobtablePos = i;
+		}
+	}
+	return jobtablePos;
+}
+
+int findIOJob()
+{
+	int jobtablePos = -1;
+	for (int i = 0; i < JobTable->size(); i++)
+	{
+		if (JobTable(i).doingIO)
+		{
+			jobtablePos = i;
+		}
+	}
+	return jobtablePos;
+}
+
+int findJobTablePos(int job_num)
+{
+	for (int i = 0; i < JobTable->size(); i++)
+	{
+		if (JobTable(i)->job_num == job_num)
+		{
+			return i;
+		}
+	}
+	return -1;
+}
+
 
 
 void drmint ( int &a, int p [] ){
