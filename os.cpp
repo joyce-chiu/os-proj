@@ -149,7 +149,7 @@ void terminateJob(int jnum){
         //TODO Tanzena:Function to remove job from memory
         while ( jnum != job -> job_num ){ job++; }
 
-        memory.removeFromMemory(job-> job_num, job ->size);
+        memory.removeFromMemory(job-> address, job ->size);
 
         //Change inMem variable of job to false
         job ->inMem = false;
