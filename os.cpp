@@ -1,56 +1,346 @@
-#include < iostream>
+#include <iostream>
 using namespace std;
 #include "job.h"   // include the job class
-#include "MemoryManager.h" // inludes the memory manager class
+#include "memorymanager.h" // inludes the memory manager class
+#include <list>
+#include<queue>
 
+static bool CurrentlySwapping;
+static bool processingIO;
 
-	static MemoryManager memory;  // creates 100k of memory
-	static queue <job> IOQ; // jobs waiting for IO
-	static bool CurrentlySwapping;
-	static bool processingIO;
+static MemoryManager memory;  // creates 100k of memory
 
-void startup (){ // Declares all variables
+static queue <Job> IOQ; // jobs waiting for I/O
 
-	sos.ontrace();
-	static job JobTable [][]; // stores jobs that are not in the system but not in memory Perhaps a linked list would work better.
-	memory = new MemoryManager();
-	IOQ = new queue <job>
-	CurrentlySwapping = false;
-	ProcessingIO = false; 
+static list <Job> JobTable; //should be intialized with space for 50 jobs
+static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
+
+static const int timeSlice = 5000; //in miliseconds
+
+void startup (){
+    // TODO: Roberto Coyotl		
+    sos.ontrace();
+    CurrentlySwapping = false;
+    processingIO = false;
+}
+
+void crint (int &a, int p[]) {		//A new job has arrived, information about the job is in array p.
+	//TODO: Joyce
+        cout << "Crint Initiated." << endl;
+
+        bookkeeper(p[5]);
+
+        /* 	p[1] = job number
+                p[2] = priority
+                p[3] = job size
+                p[4] = max time
+                p[5] = current time
+        */
+
+        if(JobTable.size() < 50) {
+                JobTable.push_back(Job(p[1], p[2], p[3], p[4], p[5] ) );// removed "new keyword. It wa giving compilation error"
+                cout << "Crint completed." << endl;
+        }
+        else cout << "JobTable is full." << endl;
+
+        runJob(a,p);
+        return;
+}
+
+void svc (int &a, int p[]) {
+	//TODO: Joyce
+        cout << "SVC Initiated." << endl;
+
+        bookkeeper(p[5]);
+
+        /*	If a = 5: the job is requesting termination.
+                If a = 6: the job is requesting another disk I/O operation.
+                If a = 7: the job requesting to be blocked until all pending I/O requests are completed.
+        */
+
+        if(a == 5) {    // a is not an array but a regualr int.
+
+                cout << "SVC 5: Job requesting termination..." << endl;
+
+                //Set killed bit of job to true if job is not doing I/O
+                if(job->doingIO == false)
+                        job->killed = true;
+
+                //Finally, terminate the job if kill bit is true
+                if(job->killed == true)
+                        terminatejob(job);
+
+        }
+
+        if(a == 6) {    // a is not an array but a regualr int.
+
+                cout << "SVC 6: Job requesting another I/O disk operation..." << endl;
+
+                //Set the requestingIO variable to true
+                job->requestingIO = true;
+
+                //Add the job number to the IO queue
+                IOQ.push_back(job->job_num);
+
+                //Check if it is the only job on the queue
+                //Check if system is already doing I/O
+                //If not, start IO on job requesting IO
+                if( (IOQ.size() == 1) && (processingIO == false)){
+                        siodisk(job->job_num);}
+
+        }
+
+        if(a == 7) {    // a is not an array but a regualr int.
+
+                cout << "SVC 7: Job requesting to be blocked until all of its pending I/O requests are completed..." << endl;
+
+                //Set blocked bit of job to true if job is requesting for I/O
+                if(job->requestingIO == true)
+                        job->blocked = true;
+                else job->blocked = false;
+        }
+
+        cout << "SVC completed." << endl;
+        runJob(a,p);
+        return;
 }
 
 
-void Dskint(int &a, int p[])
-{
-		cout << string("DSKINT WORKING") << endl;
+int CPU_scheduler () {
+	//TODO: Joyce
+
+        //Select the next job to use the CPU and return the job number
+        //The job is selected only if it is not blocked
+        //If there are no more jobs on the job table, return -1
+
+        cout << "CPU scheduler working" << endl;
+
+        int scheduledJob;	// Integer variable to hold the job number to use the CPU
+
+        while(!JobTable.empty()) {
+                if(job->blocked == false) {
+                        scheduledJob = job->job_num;
+                        return scheduledJob;
+                }
+                job++;
+        }
+        return -1;
+}
+
+void bookkeeper(int currentTime) {
 	
-		bookkeeper(p[5]);
-		//notify that I/O was completed
-		//function should find job that was sent to do I/O
-		//mark that I/O for that job was done and 
-		//select new job from IO queue to do I/O and send it to do I/O
-		processingIO = false;
-		int posOfIOJob = findJobDoingIO();
-		cout << posOfIOJob << endl;
-		jobTable->get(posOfIOJob).setDoingIO(false);
-		jobTable->get(posOfIOJob).setBlocked(false);
-		jobTable->get(posOfIOJob).setRequestIO(false);
-		if (jobTable->get(posOfIOJob).getKilled())
-		{
-			terminateJob(posOfIOJob);
-		}
-		runIO();
-		runJob(a,p);
+	//TODO: Joyce
+
+        //This function calculates how much time the job spent on the CPU before it was interrupted and saves the new maxTime of the job
+
+        cout << "Book keeper working" << endl;
+
+        int timeElapsed = currentTime - job->enterTime;
+        int timeRemain = job->maxTime - timeElapsed;
+
+        job->maxTime = timeRemain;
+
+        return;
+}
+
+
+void terminateJob(list<Job>::iterator j){ // Changed to take an interator as an arguement. This makes it slightly easier. 
+
+        //TODO Tanzena:Function to remove job from memory
+        memory.removeJobFromMemory(j);
+
+        //Change inMem variable of job to false
+        j->inMem = false;
+
+        //Remove job from job table
+        JobTable.erase(j);
+
+        cout << "Job terminated." << endl;
+
+        return;
 }
 
 
 void drmint ( int &a, int p [] ){
+	
+     // TODO: Roberto Coyotl	
+     cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
+        /*  Drum has finished swapping a job into of memory.  */
 
+    /*  update swapped job in the job table
+       Loop through job table looking for the job that was set to swap and reset flags
+      */
+    CurrentlySwapping = false;
+    for( job = JobTable.begin(); job != JobTable.end(); ++job ){
+           if (  job->swapping ) {
+                job->swapping = false;
+                job->inMem = true;
+                break; // Once job info is updated, stop iterating through list.
+           }
+    }
 }
 
 
+
+// I THINK THE LOGIC FOR THE TRO FUNCTION WORKS. I DONT KNOW IF THE CODE WORKS!
 void tro ( int &a, int p [] ){
 
-	
+/*  TODO: Roberto Coyotl
+ *  if  a job has reached job max allowed time, kill job
+ *  else, job has used up time slice but not yet used up all allowed time,
+ *  send back to ready queue (memory)  with updated current time ( total time job has spent in memory )*/
 
+    int timeElapsed = job -> currTime - job ->addressenterTime;
+    while ( p[1] != job -> job_num ){ job++; } // makes jobtable iterator point to the job that triggered tro.
+
+    if ( timeElapsed = job->maxTime){
+        // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
+        cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
+                JobTable.erase(job);
+                removeFromMemory(job);
+    }
+    else if (  timeElapsed < job->maxTime ){
+        cout << "TIMER RUNOUT" << endl << "TIME SLICE FINISHED, JOB SENT BACK TO MEMORY" << endl;
+        job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
+    }
+}
+
+
+
+void swapper (){
+	
+  /*TODO: Roberto Coyotl 
+   *Determines which jobs that are not in memory to swap into memory.
+   *Call a routine that finds space in memory, then OS must call siodrum() to swap the job in.
+   */
+        int enoughSpace = 0;
+        if ( !CurrentlySwapping ){
+                //Search through the job table for a job noT in Memory
+                job = JobTable.begin();
+                while ( job != JobTable.end() ){
+                        if  ( !(job -> inMem) ){
+                                /* If selected job fits in Memory,swap in to memory  */
+                                enoughSpace = findFreeSpace ( job -> size );
+                        if ( enoughSpace != -1 ){
+                                CurrentlySwapping = true;
+                                sos.siodrum( job -> job_num, job -> size, job -> address, 0 );
+                                memory.addToMemory( job );
+                                job -> inMem = true;
+                                cout << " Swap succesfull "<< endl;
+                            }
+                        }
+                        job++; // if job already in memory, or too big for current memory space, increment iterator to the next job
+                }
+        }
+}
+
+
+void runJob(int &a, int p[]){
+	
+    /* TODO: Roberto Coyotl
+     *  Gets the next job to run from CPU Scheduler and runs that job. *
+     *  CPU Scheduler should retunr a job number of a job that is in memory, and not blokcked*/
+    int curr_job = CPU_scheduler();
+
+    if ( curr_job != -1 ){ 	// if CPU Scheduler returns -1, there are no jobs in the job  table
+            while ( job -> job_num != curr_job ){  // look through the job table for the job number that CPU scheduler returned.
+                job++;
+            }
+
+            job -> enterTime = job -> currTime; // records the total CPU time of the job so far before it goes back to using the CPU
+
+            a = 2; // CPU in user mode
+            p[2] = job ->address;
+            p[3] = job ->size;
+
+            /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
+             *  else job is given only enough time to finish
+            */
+            p[4] = (job -> maxTime > timeSlice) ? timeSlice :  job -> maxTime;
+            job ->running = true;
+     } else a = 1; // CPU set to idle
+}
+
+
+
+void Dskint(int &a, int p[])
+{
+	// TODO: Tanzena 
+                cout << "DSKINT WORKING" << endl;
+                bookKeep(p[5]);
+                job -> doingIO = false;
+                int posOfJob = findIOJob();
+                cout << "Position of IO Job: " << posOfJob << endl;
+                job->doingIO = false;
+                job->running = true;
+                job->requestingIO = false;
+                if ( job -> running == false)
+                {
+                    terminateJob(findJobTablePos( IOJob->jobnum));
+                }
+                runIO();
+                runJob(a, p);
+}
+
+void runIO()
+{
+	// TODO: Tanzena 
+        if (!doingIO)
+        {
+                if (!IOQ->isEmpty())
+                {
+                        for ( job : IOQ)
+                        {
+                                if (job->inMem)
+                                {
+                                        sos::siodisk(job->job_num);
+                                        IOQ->remove(job);
+                                        JobTable(findJobTablePos(job->job_num))->doingIO = true;
+                                        JobTable(findJobTablePos(job->job_num))->requestingIO = true;
+                                        doingIO = true;
+                                        break;
+                                }
+                        }
+                }
+        }
+}
+
+int findRunningJob()
+{
+	// TODO: Tanzena 
+        int jobtablePos = -1;
+        for (int i = 0; i < JobTable.size(); i++)
+        {
+                if (job -> running)
+                {
+                        jobtablePos = i;
+                }
+        }
+        return jobtablePos;
+}
+
+int findIOJob()
+{
+	// TODO: Tanzena 
+        int jobtablePos = -1;
+        for (int i = 0; i < JobTable.size(); i++)
+        {
+                if ( job -> doingIO )
+                {
+                        jobtablePos = i;
+                }
+        }
+        return jobtablePos;
+}
+
+int findJobTablePos(int job_num)
+{	// TODO: Tanzena 
+        for (int i = 0; i < JobTable.size(); i++)
+        {
+                if ( job ->job_num == job_num)
+                {
+                        return i;
+                }
+        }
+        return -1;
 }
