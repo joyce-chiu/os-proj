@@ -1,11 +1,11 @@
 //.cpp file code:
-//.cpp file code:
 
 #include <string>
 #include <vector>
 #include <list>
 #include <map>
 #include <iostream>
+#include "memorymanager.h"
 
 MemoryManager::MemoryManager()
 {
@@ -67,10 +67,10 @@ bool MemoryManager::addToMemory(Job *j)
         return false;
 }
 
-void MemoryManager::removeFromMemory(Job *j)
+void MemoryManager::removeFromMemory(int job_address, int job_size)
 {
 
-        for (int i = j->getAddress(); i < j->getAddress() + j->getJobSize(); i++)
+        for (int i = job_address ; i < ( job_address + job_size); i++)
         {
                 memory[i] = 0;
         }
@@ -134,3 +134,4 @@ int MemoryManager::allocateMemory(int jobSize)
         }
         return -1;
 }
+
