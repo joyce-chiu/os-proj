@@ -9,7 +9,8 @@ using namespace std;
 static bool CurrentlySwapping;
 static bool processingIO;
 
-static queue <int> IOQ; // jobs waiting for I/O
+static deque <Job> IOQ; // jobs waiting for I/O
+static const <Job>:: iterator IOjob = IOQ.front(); // iterator lock on to the front of the DEQUE, for easy access to the first element. Only first element is allowed to do i/o.
 
 static list <Job> JobTable; //should be intialized with space for 50 jobs
 static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
@@ -279,19 +280,15 @@ void runIO()
 {
         if ( (!processingIO) && (!IOQ.empty()) )
         {
-            for ( job : IOQ)
+            if (IOjob -> inMem)
             {
-                if (job->inMem)
-                {
-                        sos::siodisk(job->job_num);
-                        IOQ->remove(job);
-                        JobTable(findJobTablePos(job->job_num))->doingIO = true;
-                        JobTable(findJobTablePos(job->job_num))->requestingIO = true;
-                        doingIO = true;
-                        break;
-                }
+                    sos::siodisk(IOjob -> job_num);
+                    IOQ->remove(job); //remove from I/O list?? in that case: IOQ.pop_front();
+                    JobTable(findJobTablePos(job->job_num))->doingIO = true; // IOjob -> doingIO = true; 
+                    JobTable(findJobTablePos(job->job_num))->requestingIO = true; // IOjob -> requestingIO = true;
+                    doingIO = true;
+                    break; // why break? 
             }
-
         }
 }
 
