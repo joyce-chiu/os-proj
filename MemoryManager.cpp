@@ -18,7 +18,7 @@ MemoryManager::MemoryManager()
 
 void MemoryManager::fillFreeSpaceTable()
 {
-	fsTable.clear(); // Clears the contents of the FST
+	//fsTable.clear(); // Clears the contents of the FST
 	int FSbegin = -1;
 	int FSend = -1;
 	for (int i = 0; i < MAX_SIZE; i++)
