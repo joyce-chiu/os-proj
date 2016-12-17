@@ -4,11 +4,11 @@
 class Job {
 public:
     int job_num;
-    int priority;
-    int size;
+    int jobPriority;
+    int jobSize;
     int maxTime;        //Max CPU time
     int enterTime;      //Time when job begins using the CPU
-    int address;
+    int jobAddress;
     bool inMem;
     bool doingIO;
     bool requestingIO;
@@ -17,14 +17,14 @@ public:
     bool killed;
     bool blocked;
 
-	
-    Job::Job() {
+
+    Job() {
         job_num = -1;
-        priority = -1;
-        size = 0 ;
+        jobPriority = -1;
+        jobSize = 0 ;
         maxTime = -1;
         enterTime = -1;
-        address = -1;
+        jobAddress = -1;
         inMem = false;
         doingIO = false;
         requestingIO = false;
@@ -33,13 +33,14 @@ public:
         killed = false;
         blocked = false;
     }
-    Job::Job( int num, int priority, int size, int max_time , int current_time){
+
+    Job( int num, int priority, int size, int max_time , int current_time){
         job_num = num;
-        priority = priority;
-        size = size ;
+        jobPriority = priority;
+        jobSize = size ;
         maxTime = max_time;
         enterTime = current_time;
-        address = -1 ;
+        jobAddress = -1 ;
         inMem = false;
         doingIO = false;
         requestingIO = false;
