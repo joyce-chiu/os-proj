@@ -5,11 +5,6 @@ using namespace std;
 #include <list>
 #include<queue>
 
-static bool CurrentlySwapping;
-static bool processingIO;
-
-
-
 static queue <int> IOQ; // jobs waiting for I/O
 
 static list <Job> JobTable; //should be intialized with space for 50 jobs
@@ -18,6 +13,18 @@ static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the
 static const int timeSlice = 5000; //in miliseconds
 
 static MemoryManager memory;  // creates 100k of memory
+
+// FUNCTION PROTOTYPES
+void bookkeeper(int currentTime);
+void runJob(int &a, int p[]);
+void terminateJob(int jnum);
+int findIOJob();
+int findJobTablePos(int job_num);
+void runIO();
+
+static bool CurrentlySwapping;
+static bool processingIO;
+
 
 void startup (){
     sos.ontrace();
@@ -69,7 +76,7 @@ void svc (int &a, int p[]) {
 
                 //Finally, terminate the job if kill bit is true
                 if(job->killed == true)
-                        terminatejob(job -> job_num);
+                        terminateJob(job -> job_num);
 
         }
 
@@ -311,7 +318,7 @@ int findRunningJob()
 
 int findIOJob()
 {
-        int jobtablePos = -1;
+      /*  int jobtablePos = -1;
         for (int i = 0; i < JobTable.size(); i++)
         {
                 if ( job -> doingIO )
@@ -320,10 +327,9 @@ int findIOJob()
                 }
         }
         return jobtablePos;
-       
-    /*while ( job -> doingIO == false ){ job++; }
+       */
+    while ( job -> doingIO == false ){ job++; }
     return job -> job_num;
-    */
 }
 
 int findJobTablePos(int job_num)
