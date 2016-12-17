@@ -103,7 +103,7 @@ void MemoryManager::removeFromMemory(int addressInMemory, int jobSize)
 void MemoryManager::removeFromMemory(Job *j)
 {
 
-	for (int i = j->getAddress(); i < j->getAddress() + j->getJobSize(); i++)
+	for (int i = j->Address(); i < j->Address() + j->JobSize(); i++)
 	{
 		memory[i] = 0;
 	}
@@ -111,7 +111,7 @@ void MemoryManager::removeFromMemory(Job *j)
 
 void MemoryManager::fillFreeSpaceTable()
 {
-	fsTable.clear(); // Clears the contents of the FST
+	//fsTable.clear(); // Clears the contents of the FST
 	int FSbegin = -1;
 	int FSend = -1;
 	for (int i = 0; i < MAX_SIZE; i++)
