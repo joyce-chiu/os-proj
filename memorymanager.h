@@ -1,6 +1,11 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 
+#include "JOB.H"
+#include <vector>
+
+using namespace std;
+
 //.h file code:
 
 /// <summary>
@@ -16,27 +21,22 @@
 /// @author Tanzena
 /// </summary>
 //TODO Tanzena
-#ifndef MEMORYMANAGER_H
-
-#include <vector>
-#include <map>
-
 class MemoryManager
 {
 public:
-        static constexpr int MAX_SIZE = 100;
-        virtual int findFreeSpace(int jobSize); // Determines if there is enough space for the current job size
-                                                // If so, return the starting address else return -1 (not enough space)
-        virtual int allocateMemory(int jobSize); // Process of allocating memory for the current jobSize
-        virtual void removeFromMemory(int addressInMemory, int jobSize); // If a job is terminated then this function is called to reset the memory
-                                                                        // so it can be used by other jobs
-        MemoryManager(); // Initialize memory with 0's representing free space
-private:
-        vector<int> memory;
-        map<int, int> fsTable;
-        void fillFreeSpaceTable(); // Locates where in memory there is free space and puts the free space size
-                                  // as the key and the address of the free space as the value.
+
+    const int MAX_SIZE = 100;
+	vector<int> memory;
+	map<int, int> fsTable;
+
+	MemoryManager();
+
+	virtual bool addToMemory(Job *j);
+	virtual void removeFromMemory(Job *j);
+	void fillFreeSpaceTable();
+	int findFreeSpace(int jobSize);
+	int allocateMemory(int jobSize);
 };
 
-#endif // MEMORYMANAGER_H
 
+#endif // MEMORYMANAGER_H
