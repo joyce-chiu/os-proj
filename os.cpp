@@ -232,30 +232,37 @@ void swapper (){
 }
 
 
-void runJob(int &a, int p[]){
-    /*  Gets the next job to run from CPU Scheduler and runs that job. *
-     *  CPU Scheduler should retunr a job number of a job that is in memory, and not blokcked*/
-    int curr_job = CPU_scheduler();
+void runJob(long &a, long p[]) {
+	/*  Gets the next job to run from CPU Scheduler and runs that job. *
+	*  CPU Scheduler should retunr a job number of a job that is in memory, and not blokcked*/
+	long curr_job = CPU_scheduler();
 
-    if ( curr_job != -1 ){ 	// if CPU Scheduler returns -1, there are no jobs in the job  table
-            while ( job -> job_num != curr_job ){  // look through the job table for the job number that CPU scheduler returned.
-                job++;
-            }
+	if ( curr_job == -1 ) { a = 1; }
 
-            job -> enterTime = job -> currTime; // records the total CPU time of the job so far before it goes back to using the CPU
+    while (job->job_num != curr_job && ) {  // look through the job table for the job number that CPU scheduler returned.
+        job++;
+    }
 
-            a = 2; // CPU in user mode
-            p[2] = job ->address;
-            p[3] = job ->size;
+    if ( job -> inMem == false || job -> blocked == true ||){
+            a = 1;
+    }else{
+        job->enterTime = job->currTime; // records the total CPU time of the job so far before it goes back to using the CPU
 
-            /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
-             *  else job is given only enough time to finish
-            */
-            p[4] = (job -> maxTime > timeSlice) ? timeSlice :  job -> maxTime;
-            job ->running = true;
-     } else a = 1; // CPU set to idle
+        a = 2; // CPU in user mode
+        p[2] = job->address;
+        p[3] = job->size;
+
+        /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
+        *  else job is given only enough time to finish
+        */
+        if ( job -> maxTime > timeSlice){
+            p[4] = timeSlice;
+        }else p[4] = job -> maxTime;
+
+        job->running = true;
+    }
+
 }
-
 
 
 void Dskint(int &a, int p[])
