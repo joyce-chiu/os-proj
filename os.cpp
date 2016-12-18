@@ -206,28 +206,26 @@ void tro ( int &a, int p [] ){
 
 
 
-void swapper (){
+void swapper (long jobnum){
   /* *Determines which jobs that are not in memory to swap into memory.
    *Call a routine that finds space in memory, then OS must call siodrum() to swap the job in.
    */
         int enoughSpace = 0;
         if ( !CurrentlySwapping ){
                 //Search through the job table for a job noT in Memory
-                job = JobTable.begin();
-                while ( job != JobTable.end() ){
-                        if  ( !(job -> inMem) ){
-                            enoughSpace = memory.findFreeSpace( job -> size );
-                            /* If selected job fits in Memory,swap in to memory  */
-                            if ( enoughSpace != -1 ){
-                                    CurrentlySwapping = true;
-                                    sos.siodrum( job -> job_num, job -> size, job -> address, 0 );
-                                    memory.allocateMemory(job ->size);
-                                    job -> inMem = true;
-                                    cout << " Swap succesfull "<< endl;
-                            }
-                        }
-                        job++; // if job already in memory, or too big for current memory space, increment iterator to the next job
-                }
+                while ( job -> job_num != jobnum ){ job++; }
+		if  ( !(job -> inMem) ){
+		    enoughSpace = memory.findFreeSpace( job -> size );
+		    /* If selected job fits in Memory,swap in to memory  */
+		    if ( enoughSpace != -1 ){
+			    CurrentlySwapping = true;
+			    sos.siodrum( job -> job_num, job -> size, job -> address, 0 );
+			    memory.allocateMemory(job ->size);
+			    job -> inMem = true;
+			    cout << " Swap succesfull "<< endl;
+		    }
+		}
+                
         }
 }
 
@@ -246,6 +244,8 @@ void runJob(long &a, long p[]) {
     if ( job -> inMem == false || job -> blocked == true ||){
             a = 1;
     }else{
+	    
+	swapper(job -> job_num);
         job->enterTime = job->currTime; // records the total CPU time of the job so far before it goes back to using the CPU
 
         a = 2; // CPU in user mode
