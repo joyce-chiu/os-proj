@@ -9,37 +9,61 @@ using namespace std;
 static bool CurrentlySwapping;
 static bool processingIO;
 
-static deque <Job> IOQ; // jobs waiting for I/O
-static const <Job>:: iterator IOjob = IOQ.front(); // iterator lock on to the front of the DEQUE, for easy access to the first element. Only first element is allowed to do i/o.
+static queue <long > IOQ; // jobs waiting for I/O
+//static const <Job>:: iterator IOjob = IOQ.front(); // iterator lock on to the front of the DEQUE, for easy access to the first element. Only first element is allowed to do i/o.
 
 static list <Job> JobTable; //should be intialized with space for 50 jobs
 static list<Job>::iterator job = JobTable.begin(); // A gloabl joberator for the job table. iterator points to the job object in the list.
 
-static const int timeSlice = 5000; //in miliseconds
+static const long  timeSlice = 5; //in miliseconds
 
 static MemoryManager memory;  // creates 100k of memory
+static long runningJobNum;
+static long IOJobNum;
+//static long interruptedJobNum;
+static long lastRunningJob = 0;
+static long timeRemain = -1;
+
+//Function Prototypes
+void siodisk(long);
+void siodrum(long jnum, long jsize, long jaddress, long direction);
+void ontrace();
+void offtrace();
+void terminateJob(long jnum);
+void swapper();
+void runJob(long &a, long p[]);
+void runIO();
+list<Job>::iterator findRunningJob(long);
+list<Job>::iterator findIOJob(long);
+list<Job>::iterator findInterruptedJob(long);
+long  findJobTablePos(long);
+void bookkeeper(long);
+void terminateJob(long);
+Job jobObj(long);
+
 
 void startup (){
-    sos.ontrace();
+    ontrace();
     CurrentlySwapping = false;
     processingIO = false;
 }
 
-void crint (int &a, int p[]) {		//A new job has arrived, information about the job is in array p.
+void Crint (long &a, long p[]) {		//A new job has arrived, information about the job is in array p.
 
         cout << "Crint Initiated." << endl;
 
         bookkeeper(p[5]);
 
-        /* 	p[1] = job number
-                p[2] = priority
+        /* 	    p[1] = job number
+                p[2] = address
                 p[3] = job size
                 p[4] = max time
                 p[5] = current time
         */
 
         if(JobTable.size() < 50) {
-                JobTable.push_back(Job(p[1], p[2], p[3], p[4], p[5] ) );// removed "new keyword. It wa giving compilation error"
+                Job *j = new Job(p[1], p[2], p[3], p[4], p[5]);
+                JobTable.push_back(*j);// removed "new keyword. It wa giving compilation error"
                 cout << "Crint completed." << endl;
         }
         else cout << "JobTable is full." << endl;
@@ -48,11 +72,12 @@ void crint (int &a, int p[]) {		//A new job has arrived, information about the j
         return;
 }
 
-void svc (int &a, int p[]) {
+void Svc (long &a, long p[]) {
 
         cout << "SVC Initiated." << endl;
 
         bookkeeper(p[5]);
+        while (job -> getJobNum()!= p[1]){ job++; }
 
         /*	If a = 5: the job is requesting termination.
                 If a = 6: the job is requesting another disk I/O operation.
@@ -64,12 +89,12 @@ void svc (int &a, int p[]) {
                 cout << "SVC 5: Job requesting termination..." << endl;
 
                 //Set killed bit of job to true if job is not doing I/O
-                if(job->doingIO == false)
-                        job->killed = true;
+                if(job->getDoingIO() == false)
+                        job->setKilled(true);
 
                 //Finally, terminate the job if kill bit is true
-                if(job->killed == true)
-                        terminatejob(job -> job_num);
+                if(job->getKilled() == true)
+                        terminateJob(p[1]);
 
         }
 
@@ -78,16 +103,18 @@ void svc (int &a, int p[]) {
                 cout << "SVC 6: Job requesting another I/O disk operation..." << endl;
 
                 //Set the requestingIO variable to true
-                job->requestingIO = true;
+                job->setRequestingIO(true);
 
                 //Add the job number to the IO queue
-                IOQ.push(job->job_num); // queue is a LIFO stucture. be default push(),adds to the end of the queue
+                IOQ.push(job->getJobNum()); // queue is a FIFO structure. be default push(),adds to the end of the queue
 
                 //Check if it is the only job on the queue
                 //Check if system is already doing I/O
                 //If not, start IO on job requesting IO
                 if( (IOQ.size() == 1) && (processingIO == false)){
-                        siodisk(job->job_num);
+                        processingIO = true;
+                        runIO();
+                        
                 }
 
         }
@@ -97,62 +124,60 @@ void svc (int &a, int p[]) {
                 cout << "SVC 7: Job requesting to be blocked until all of its pending I/O requests are completed..." << endl;
 
                 //Set blocked bit of job to true if job is requesting for I/O
-                if(job->requestingIO == true)
-                        job->blocked = true;
-                else job->blocked = false;
+                if(job->getRequestingIO ()){
+                        job->setBlocked(true);
+              //  else job->setBlocked (false);
+                        IOQ.push(job->getJobNum());
+                }
         }
 
         cout << "SVC completed." << endl;
+      //  runIO();
+
         runJob(a,p);
         return;
 }
 
 
-int CPU_scheduler () {
+long CPU_scheduler () {
 
         //Select the next job to use the CPU and return the job number
         //The job is selected only if it is not blocked
         //If there are no more jobs on the job table, return -1
 
-        cout << "CPU scheduler working" << endl;
 
-        int scheduledJob;	// Integer variable to hold the job number to use the CPU
+        cout << "CPU scheduler working." << endl;
+        while ( lastRunningJob >= job -> getJobNum()){ job++; }//makes sure the next job is in table is shecduled. ROUND ROBIN. Each job gets 5s.
+        long scheduledJob;	// Integer variable to hold the job number to use the CPU
 
-        while(!JobTable.empty()) {
-                if(job->blocked == false) {
-                        scheduledJob = job->job_num;
-                        return scheduledJob;
-                }
-                job++;
-        }
-        return -1;
+        if (!JobTable.empty()){
+            scheduledJob = job->getJobNum();
+            job++;
+            cout << "Scheduler completed. JOB SCHEDULED: " <<scheduledJob << endl;
+            return scheduledJob;
+        } else return -1;
 }
 
-void bookkeeper(int currentTime) {
 
-        //This function calculates how much time the job spent on the CPU before it was interrupted and saves the new maxTime of the job
+void bookkeeper(long currentTime) {
 
-        cout << "Book keeper working" << endl;
+        //This function calculates how much time the job spent on the CPU before it was interrupted and saves the new getMaxTime() of the job
 
-        int timeElapsed = currentTime - job->enterTime;
-        int timeRemain = job->maxTime - timeElapsed;
+        //long timeElapsed = currentTime - job->getEnterTime();
+        long timeRemain = job->getMaxTime() - currentTime;
 
-        job->maxTime = timeRemain;
+        job->setMaxTime(timeRemain);
 
         return;
 }
 
 
-void terminateJob(int jnum){
+void terminateJob(long jnum){
 
-
-        //TODO Tanzena:Function to remove job from memory
-        while ( jnum != job -> job_num ){ job++; }
-
-        memory.removeFromMemory(job-> address, job ->size);
+        memory.removeFromMemory((findInterruptedJob(jnum))->getJobStartLoc(), (findInterruptedJob(jnum))->getJobEndLoc());
 
         //Change inMem variable of job to false
-        job ->inMem = false;
+        job ->setInMem(false);
 
         //Remove job from job table
         JobTable.erase(job);
@@ -163,7 +188,7 @@ void terminateJob(int jnum){
 }
 
 
-void drmint ( int &a, int p [] ){
+void Drmint ( long &a, long p [] ){
      cout << "DRUM INTERRUPT" << endl << "Swap has finished. Setting flags." << endl;
         /*  Drum has finished swapping a job into of memory.  */
 
@@ -172,171 +197,168 @@ void drmint ( int &a, int p [] ){
       */
     CurrentlySwapping = false;
     for( job = JobTable.begin(); job != JobTable.end(); ++job ){
-           if (  job->swapping ) {
-                job->swapping = false;
-                job->inMem = true;
-                break; // Once job info is updated, stop iterating through list.
+           if (  job->getSwapping() ) {
+                job->setSwapping(false);
+                job->setInMem(true);
+               // job ->setBlocked(false);
+             //   break; // Once job info is updated, stop iterating through list.
            }
     }
+    runJob(a,p);
 }
 
-
-
-// I THINK THE LOGIC FOR THE TRO FUNCTION WORKS. I DONT KNOW IF THE CODE WORKS!
-void tro ( int &a, int p [] ){
+void Tro ( long &a, long p [] ){
 
 /*  if  a job has reached job max allowed time, kill job
  *  else, job has used up time slice but not yet used up all allowed time,
  *  send back to ready queue (memory)  with updated current time ( total time job has spent in memory )*/
 
-    int timeElapsed = job -> currTime - job ->enterTime;
-    while ( p[1] != job -> job_num ){ job++; } // makes jobtable iterator point to the job that triggered tro.
+    cout<< "TRo engaged"<<endl;
+    long  timeElapsed = p[5] - (findRunningJob(runningJobNum))->getEnterTime();
+    while ( p[1] != job -> getJobNum() ){ job++; } // makes jobtable iterator point to the job that triggered tro.
 
-    if ( timeElapsed = job->maxTime){
+    if ( timeElapsed == job->getMaxTime()){
         // "kill job". Swap out not neccesary. Job table entry and memory space can be used by other job.
         cout << "TIMER RUNOUT" << endl << "TOTAL CPU TIME HAS EXCEEDED MAX TIME ALLOWED" << endl;
-                terminateJob(job -> job_num);
+                terminateJob(findRunningJob(runningJobNum)->getJobNum());
 
     }
-    else if (  timeElapsed < job->maxTime ){
+    else if (  timeElapsed < job->getMaxTime() ){
         cout << "TIMER RUNOUT" << endl << "TIME SLICE FINISHED, JOB SENT BACK TO MEMORY" << endl;
-        job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
+        //job->currTime =  job-> currTime + timeSlice ;  // total curr_time + Time Slice
     }
 }
 
 
-
-void swapper (long jobnum){
+void swapper (long jnum){
   /* *Determines which jobs that are not in memory to swap into memory.
    *Call a routine that finds space in memory, then OS must call siodrum() to swap the job in.
    */
-        int enoughSpace = 0;
+        long enoughSpace = 0;
         if ( !CurrentlySwapping ){
-                //Search through the job table for a job noT in Memory
-                while ( job -> job_num != jobnum ){ job++; }
-		if  ( !(job -> inMem) ){
-		    enoughSpace = memory.findFreeSpace( job -> size );
-		    /* If selected job fits in Memory,swap in to memory  */
-		    if ( enoughSpace != -1 ){
-			    CurrentlySwapping = true;
-			    sos.siodrum( job -> job_num, job -> size, job -> address, 0 );
-			    memory.allocateMemory(job ->size);
-			    job -> inMem = true;
-			    cout << " Swap succesfull "<< endl;
-		    }
-		}
-                
-        }
+            while ( jnum != job-> getJobNum()){ job++; }
+            //if ( !(job->getInMem())){
+                enoughSpace = memory.findFreeSpace( job -> getJobSize() );
+                /* If selected job fits in Memory,swap in to memory  */
+                if ( enoughSpace != -1 ){
+                    CurrentlySwapping = true;
+                    job -> setJobStartLoc( enoughSpace );// findfreespace returns a base address for the job
+                    job -> setJobEndLoc( enoughSpace + (job -> getJobSize())  );
+                    //job -> setEnterTime(0);
+                    siodrum( job -> getJobNum(), job-> getJobSize() , job->getJobStartLoc(), 0 );
+                    memory.allocateMemory( job -> getJobNum(),job -> getJobStartLoc(), job->getJobEndLoc());
+                    job -> setInMem (true);
+
+                }
+            }
 }
 
 
 void runJob(long &a, long p[]) {
 	/*  Gets the next job to run from CPU Scheduler and runs that job. *
 	*  CPU Scheduler should retunr a job number of a job that is in memory, and not blokcked*/
+
 	long curr_job = CPU_scheduler();
-
-	if ( curr_job == -1 ) { a = 1; }
-
-    while (job->job_num != curr_job && ) {  // look through the job table for the job number that CPU scheduler returned.
-        job++;
+    while (job->getJobNum() != curr_job) {  // look through the job table for the job number that CPU scheduler returned.
+            job++;
     }
 
-    if ( job -> inMem == false || job -> blocked == true ||){
+	if ( curr_job == -1 || job-> getBlocked() == true) {
             a = 1;
-    }else{
-	    
-	swapper(job -> job_num);
-        job->enterTime = job->currTime; // records the total CPU time of the job so far before it goes back to using the CPU
-
-        a = 2; // CPU in user mode
-        p[2] = job->address;
-        p[3] = job->size;
-
-        /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
-        *  else job is given only enough time to finish
-        */
-        if ( job -> maxTime > timeSlice){
-            p[4] = timeSlice;
-        }else p[4] = job -> maxTime;
-
-        job->running = true;
+            cout<<  " im in run job. job is blocked"<<endl;
     }
+    else{
+        if ( !(job -> getInMem()) ){
+            swapper(job -> getJobNum());
+        }else{
+            cout<< " Job is not blocked "<<endl<<"setting values for CPU to run"<<endl;
+            a=2;
+            job->setEnterTime(p[5]); // records the total CPU time of the job so far before it goes back to using the CPU
 
+             // CPU in user mode
+            p[2] = job->getJobStartLoc();
+            p[3] = job->getJobSize() ;
+
+            /*  checks to see if job can finish in less than a time slice, if not, job is given entire time slice,
+            *  else job is given only enough time to finish
+            */
+            p[4] = timeSlice;
+
+            job->setRunning(true);
+        }
+    }
 }
-
-
-void Dskint(int &a, int p[])
+void Dskint(long &a, long p[])
 {
-                cout << "DSKINT WORKING" << endl;
-                bookkeeper(p[5]);
-                job -> doingIO = false;
-                int posOfJob = findIOJob();
-                cout << "Position of IO Job: " << posOfJob << endl;
-                job->doingIO = false;
-                job->running = true;
-                job->requestingIO = false;
-                if ( job -> running == false)
-                {
-                    terminateJob(findJobTablePos( IOJob->jobnum));
-                }
-                runIO();
-                runJob(a, p);
+    while ( job -> getJobNum() != IOJobNum ){ job++; }
+
+    cout << "DSKINT WORKING"<<endl;
+    bookkeeper(p[5]);
+    processingIO = false;
+    job->setDoingIO(false);
+    job -> setBlocked(false);
+    job->setRunning(true);
+    job->setRequestingIO(false);
+
+    cout << "Position of IO Job" << IOJobNum << endl;
+
+
+    if ( job -> getRunning() == false){
+        terminateJob(job->getJobNum());
+    }
+    runJob(a, p);
 }
 
 void runIO()
 {
-        if ( (!processingIO) && (!IOQ.empty()) )
+       if ( (!processingIO) && (!IOQ.empty()) )
         {
-            if (IOjob -> inMem)
+            IOJobNum = IOQ.front();
+            while (job->getJobNum() != IOJobNum){ job++; }             //Retrieve the first (oldest) element in the IO queue. make job point the the job
+
+            if(job->getInMem())    //Check if the IOjob on the queue is in memory
             {
-                    sos::siodisk(IOjob -> job_num);
-                    IOQ->remove(job); //remove from I/O list?? in that case: IOQ.pop_front();
-                    JobTable(findJobTablePos(job->job_num))->doingIO = true; // IOjob -> doingIO = true; 
-                    JobTable(findJobTablePos(job->job_num))->requestingIO = true; // IOjob -> requestingIO = true;
-                    doingIO = true;
-                    break; // why break? 
+                cout<< " about to start doing i/o for job num: "<< job->getJobNum();
+                siodisk(job->getJobNum());
+                processingIO = true;
+                IOQ.pop();                      //Removes the first (oldest) element in the IO queue
+                job->setDoingIO(true);
             }
+        }else cout<< "I/O already in progress or IOQ is empty"<<endl;
+}
+
+list<Job>::iterator findRunningJob(long jnum)
+{
+        for( job = JobTable.begin(); job != JobTable.end(); ++job )
+        {
+            if(job->getRunning())
+                return job;
         }
 }
 
-int findRunningJob()
+list<Job>::iterator findIOJob(long jnum)
 {
-        int jobtablePos = -1;
-        for (int i = 0; i < JobTable.size(); i++)
+        for( job = JobTable.begin(); job != JobTable.end(); ++job )
         {
-                if (job -> running)
-                {
-                        jobtablePos = i;
-                }
+            if(job->getDoingIO())
+                return job;
         }
-        return jobtablePos;
 }
 
-int findIOJob()
+list<Job>::iterator findInterruptedJob(long jnum)
 {
-        int jobtablePos = -1;
-        for (int i = 0; i < JobTable.size(); i++)
+        for( job = JobTable.begin(); job != JobTable.end(); ++job )
         {
-                if ( job -> doingIO )
-                {
-                        jobtablePos = i;
-                }
+            if(job->getJobNum() == jnum)
+                return job;
         }
-        return jobtablePos;
-
-    /*while ( job -> doingIO == false ){ job++; }
-    return job -> job_num;
-    */
 }
 
-int findJobTablePos(int job_num)
-{
-        for (int i = 0; i < JobTable.size(); i++)
-        {
-                if ( job ->job_num == job_num)
-                {
-                        return i;
-                }
-        }
-        return -1;
+
+Job jobObj (long jnum) {
+    for(job = JobTable.begin(); job != JobTable.end(); ++job)
+    {
+        if(job->getJobNum() == jnum)
+            return *job;
+    }
 }
