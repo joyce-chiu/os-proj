@@ -1,42 +1,27 @@
 #ifndef MEMORYMANAGER_H
 #define MEMORYMANAGER_H
 
-#include "JOB.H"
 #include <vector>
+#include <map>
+
+#include "JOB.H"
 
 using namespace std;
 
-//.h file code:
-
-/// <summary>
-/// * Should be able to add to the memory
-/// delete from the memory
-/// find free space for job
-/// </summary>
-//package osProject;
-
-
-///
-/// <summary>
-/// @author Tanzena
-/// </summary>
-//TODO Tanzena
 class MemoryManager
 {
 public:
 
-    const int MAX_SIZE = 100;
-	vector<int> memory;
-	map<int, int> fsTable;
+    const long  MAX_SIZE = 100;
+    bool startAddSet;
+	vector<long > memory;
+	map<long , long > fsTable;
 
 	MemoryManager();
-
-	virtual bool addToMemory(Job *j);
-	virtual void removeFromMemory(Job *j);
+	void removeFromMemory(long , long );
 	void fillFreeSpaceTable();
-	int findFreeSpace(int jobSize);
-	int allocateMemory(int jobSize);
+	long  findFreeSpace(long  jobSize); //working
+	void  allocateMemory(long jnum,long jobStart, long jobEnd); //working
 };
-
 
 #endif // MEMORYMANAGER_H
