@@ -1,93 +1,34 @@
-//.cpp file code:
-
 #include <string>
 #include <vector>
 #include <list>
-#include <map>
 #include <iostream>
+#include <map>
+
 #include "MEMORYMANAGER.H"
+
+using namespace std;
 
 MemoryManager::MemoryManager()
 {
-	memory.reserve(MAX_SIZE);
-	fsTable = map<int, int>();
+	/* Initialize memory with 0's representing free space */
 
-	//memory = list<>();
-	for (int i = 0; i < MAX_SIZE; i++)
-	{
-		memory.push_back(0);
-	}
-}
+	memory = vector<long>(MAX_SIZE, 0);
+	fsTable = map<long, long>(); // each map entry takes in a jobs start and end location in mem
 
-bool MemoryManager::addToMemory(Job *j)
-{
-	cout << string("addToMemory WORKING") << endl;
-
-	int sizeNeeded = j->jobSize;
-	bool startAddSet = false;
-	int startAdd = -1;
-	int endAdd;
-	//int space = 0;
-	for (int i = 0; i < MAX_SIZE; i++)
-	{ //find spase in memory for job
-		if (memory[i] == 0 && startAddSet == false)
-		{
-			startAdd = i;
-
-			startAddSet = true;
-		}
-
-
-		if ((memory[i] == 1 && startAddSet) || i == 99)
-		{
-
-			endAdd = i;
-			if ((endAdd - startAdd) >= sizeNeeded)
-			{ //check if right size for our job
-				j->jobAddress(startAdd); //assign starting address for tis job
-				//j.setInMemory(true);
-				break;
-			}
-			else
-			{
-				startAddSet = false;
-			}
-
-		}
-	}
-	if (startAddSet)
-	{
-		for (int i = j->jobAddress; i < j->jobAddress + j->jobSize; i++)
-		{
-			memory[i] = 1;
-		}
-	j->swapping = true;
-	return true;
-	}
-	return false;
-}
-
-void MemoryManager::removeFromMemory(Job *j)
-{
-
-	for (int i = j->jobAddress; i < j->jobAddress + j->jobSize; i++)
-	{
-		memory[i] = 0;
-	}
 }
 
 void MemoryManager::fillFreeSpaceTable()
 {
 	fsTable.clear(); // Clears the contents of the FST
-	int FSbegin = -1;
-	int FSend = -1;
-	for (int i = 0; i < MAX_SIZE; i++)
+	long  FSbegin = -1;
+	long  FSend = -1;
+	for (long  i = 0; i < MAX_SIZE; i++)
 	{
 		if (memory[i] == 0)
 		{
 			FSbegin = i;
 			FSend = i;
-			for (int j = i; j < MAX_SIZE; j++)
+			for (long  j = i; j < MAX_SIZE; j++)
 			{
 				if (memory[j] == 0)
 				{
@@ -107,30 +48,41 @@ void MemoryManager::fillFreeSpaceTable()
 	}
 }
 
-int MemoryManager::findFreeSpace(int jobSize)
+long  MemoryManager::findFreeSpace(long  jobSize)
 {
-	for (auto entry : fsTable)
-	{
-		if (entry.second >= jobSize)
-		{
-			return entry.first;
-		}
-	}
-	return -1;
+    if ( fsTable.empty() ){
+        return 0;
+    }
+    else {
+        long lastMemVal = fsTable.rbegin()->first;// last entry in the table
+        if( MAX_SIZE >= lastMemVal + jobSize ){ // fsTable.rbegin maps to the last occupied memory cell.
+            long nextFreespace = lastMemVal + 1;
+
+            cout<< "You Fit at Mem[" << nextFreespace<<"]"<<endl;
+
+            return nextFreespace;
+        }
+        else return -1;
+    }
 }
 
-int MemoryManager::allocateMemory(int jobSize)
+void  MemoryManager::allocateMemory(long jnum, long jobStart, long jobEnd)
 {
 	// Before allocating memory we call this function determine where there is free space
-	fillFreeSpaceTable();
-	int freeSpacePos = findFreeSpace(jobSize);
-	if (freeSpacePos != -1)
-	{
-		for (int i = freeSpacePos; i < freeSpacePos + jobSize; i++)
+	//fillFreeSpaceTable();
+	//long freeSpacePos = findFreeSpace(j.getJobSize());
+		for (long i = jobStart; i < jobEnd ; i++)
 		{
 			memory[i] = 1;
 		}
-		return freeSpacePos;
+		//return freeSpacePos;
+}
+
+void MemoryManager::removeFromMemory(long  startPos, long  endPos)
+{
+
+	for (long  i = startPos; i <= endPos; i++)
+	{
+		memory[i] = 0;
 	}
-	return -1;
 }
